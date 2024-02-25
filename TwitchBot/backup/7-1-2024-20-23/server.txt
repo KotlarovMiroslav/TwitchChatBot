@@ -1,0 +1,95 @@
+require('dotenv').config();
+const tmi = require('tmi.js');
+
+const regexCommand = new RegExp (/^!([a-zA-Z0-9]+)(?:\W+)?(.*)?/);
+
+// let resultText = "";
+
+const arguments = ['cetus','vallis','cambion','duviri','zariman','archonHunt']
+
+const client = new tmi.Client({
+	channels: [ 'oldeknight' , 'ghostcupcake_'],
+    identity: {
+		username: process.env.TWITCH_BOT_USERNAME,
+		password: process.env.TWITCH_BOT_TOKEN
+	},
+});
+
+client.connect();
+
+
+
+
+client.on('message', async  (channel, tags, message, self) => {
+    const isNotBot = tags.username.toLowerCase() !== process.env.TWITCH_BOT_USERNAME;
+    if (!isNotBot){
+        return;
+    }else{
+        try{
+            const [raw, chatCommand, chatArgument] = message.match(regexCommand);
+            //
+            // const {response} = commands[command] || {};
+            // console.log(typeof response)
+            const command = chatCommand.toLowerCase()
+            const argument = chatArgument.toLowerCase()
+            console.log("Current command: " + command)
+            
+            if(command === 'wf'){
+                console.log(argument + ' test passed')
+                if(argument === 'help' || argument === 'commands'){
+                    client.say(channel, `Every command starts with !wf and the current arguments are: ` + arguments);
+                }else if (argument === 'cetus') {
+                    client.say(channel, `Current time on Cetus is ${(await getData(argument)).state}`);
+                }else if (argument === 'vallis'){
+                    client.say(channel, `Current time on Orb Vallis is ${(await getData(argument)).state}`);
+                }else if (argument === 'cambion'){
+                    client.say(channel, `Current time on Cambion Drift is ${(await getData(argument)).state}`);
+                }else if (argument === 'duviri'){
+                    client.say(channel, `Current emotion on the Duviri Paradox is ${(await getData(argument)).state}`);
+                }else if (argument === 'zariman'){
+                    client.say(channel, `Current faction aboard the Zariman ship is ${(await getData(argument)).state}`);
+                }else if (argument === 'archonhunt'){
+                    client.say(channel, `Current archon is ${(await getArchHuntData()).boss} and current missions are: ${(await getArchHuntData()).missions[0].type},${(await getArchHuntData()).missions[1].type},${(await getArchHuntData()).missions[2].type} on ${await guessTheArchonPlanet()}`);
+                }
+            }
+            // } else if (typeof response === 'function'){
+            //     client.say(channel, response)
+            // }
+
+            // if(command) {
+            //     client.say(channel, `Command ${command} found with argument ${argument} Thats the raw command: ${raw}`);
+            // }
+        }catch(e){
+            console.log("No command sent!")
+            // console.log(e)
+        }
+    }
+	// "Ghosty: Hello, World!"
+	console.log(`${tags['display-name']}: ${message}`);
+});
+
+async function getData(chosenOW) {
+    url = `https://api.warframestat.us/pc/${chosenOW}Cycle`;
+    const response = await fetch(url);
+    const jsonResponse = await response.json();
+    console.log(jsonResponse);
+    return jsonResponse
+  } 
+
+async function getArchHuntData() {
+    url = 'https://api.warframestat.us/PC/en/archonHunt/';
+    const response = await fetch(url);
+    const jsonResponse = await response.json();
+    console.log(jsonResponse);
+    return jsonResponse
+} 
+
+async function guessTheArchonPlanet(){
+    let planet = (await getArchHuntData()).missions[2].nodeKey;
+    result = planet.split(" ")
+    // planet = planet.substr(0,planet.length - 1);
+    console.log(typeof result)
+    console.log(result)
+    return result[1].substring(1,result[1].length - 1);
+}
+ 
